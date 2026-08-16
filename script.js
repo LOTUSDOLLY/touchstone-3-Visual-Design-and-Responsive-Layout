@@ -2,7 +2,6 @@
 // NORTH STAR BAKERY - TOUCHSTONE 4 SCRIPT
 // ==========================================
 
-// Arrays and Objects to manage data (Advanced Requirement)
 const bakeryItems = [
     { id: 'sourdough', name: 'Signature Sourdough Loaf', price: 8.50 },
     { id: 'croissant', name: 'All-Butter Croissant', price: 3.50 },
@@ -11,21 +10,29 @@ const bakeryItems = [
 
 let userFavorites = [];
 
-// Function 1: Initialize page and load stored data
+// Initialize everything when the DOM loads
 document.addEventListener('DOMContentLoaded', () => {
-    loadSavedPreferences();
     setupInteractiveFeature();
+    loadSavedPreferences();
     setupFormValidation();
 });
 
-// Function 2: Interactive Feature (Product Favorites / Wishlist Tracker)
+// Interactive Feature: Wishlist / Favorite Tracker Widget
 function setupInteractiveFeature() {
     const featureContainer = document.querySelector('main');
     if (!featureContainer) return;
 
-    // Create a dynamic wishlist section on the products or home page
+    // Prevent duplicating if it already exists
+    if (document.querySelector('.wishlist-widget')) return;
+
     const interactiveDiv = document.createElement('div');
     interactiveDiv.classList.add('wishlist-widget');
+    interactiveDiv.style.margin = "20px 0";
+    interactiveDiv.style.padding = "20px";
+    interactiveDiv.style.backgroundColor = "#FFF8F0";
+    interactiveDiv.style.border = "1px solid #D88C5A";
+    interactiveDiv.style.borderRadius = "8px";
+    
     interactiveDiv.innerHTML = `
         <h3>Quick Wishlist & Favorite Tracker</h3>
         <p>Select your favorite bakery item to save your preference:</p>
@@ -35,21 +42,25 @@ function setupInteractiveFeature() {
             <option value="All-Butter Croissant">All-Butter Croissant ($3.50)</option>
             <option value="Custom Celebration Tier">Custom Celebration Tier ($45.00+)</option>
         </select>
-        <button id="save-favorite-btn" type="button">Save Favorite</button>
+        <button id="save-favorite-btn" type="button" style="margin-left: 10px; padding: 5px 10px;">Save Favorite</button>
         <p id="wishlist-status" style="margin-top: 10px; font-weight: bold; color: #6B3E26;"></p>
     `;
     
-    // Append feature to main content
     featureContainer.appendChild(interactiveDiv);
 
     const saveBtn = document.getElementById('save-favorite-btn');
-    saveBtn.addEventListener('click', handleFavoriteSelection);
+    if (saveBtn) {
+        saveBtn.addEventListener('click', handleFavoriteSelection);
+    }
 }
 
-// Function 3: Handle user interaction and dynamic page update
+// Handle user selection and save to localStorage
 function handleFavoriteSelection() {
     const selectElement = document.getElementById('favorite-item-select');
     const statusDisplay = document.getElementById('wishlist-status');
+    
+    if (!selectElement || !statusDisplay) return;
+    
     const selectedValue = selectElement.value;
 
     if (selectedValue === "") {
@@ -58,49 +69,42 @@ function handleFavoriteSelection() {
         return;
     }
 
-    // Add to array
     userFavorites.push(selectedValue);
-
-    // Save to localStorage (Browser Storage Requirement)
     localStorage.setItem('northStarFavorite', selectedValue);
 
-    // Dynamic Page Update
     statusDisplay.textContent = `Success! "${selectedValue}" has been saved to your browser preferences.`;
     statusDisplay.style.color = "#2F2A26";
 }
 
-// Function 4: Load stored data from browser storage
+// Load stored preferences on page load or refresh
 function loadSavedPreferences() {
     const savedFavorite = localStorage.getItem('northStarFavorite');
     const statusDisplay = document.getElementById('wishlist-status');
     const selectElement = document.getElementById('favorite-item-select');
-    const nameInput = document.getElementById('name');
 
     if (savedFavorite) {
-        userFavorites.push(savedFavorite);
+        if (!userFavorites.includes(savedFavorite)) {
+            userFavorites.push(savedFavorite);
+        }
         if (statusDisplay) {
             statusDisplay.textContent = `Welcome back! Your saved favorite item is: ${savedFavorite}`;
+            statusDisplay.style.color = "#2F2A26";
         }
         if (selectElement) {
             selectElement.value = savedFavorite;
         }
     }
-
-    // Bonus: Pre-fill a form field if applicable
-    const savedName = localStorage.getItem('northStarUserName');
-    if (nameInput && savedName) {
-        nameInput.value = savedName;
-    }
 }
 
-// Function 5: Form Validation Logic
+// Form Validation Logic
 function setupFormValidation() {
     const form = document.querySelector('form');
     if (!form) return;
 
-    // Create error message containers dynamically near fields
     const nameInput = document.getElementById('name');
     const emailInput = document.getElementById('email');
+
+    if (!nameInput || !emailInput) return;
 
     const nameError = createErrorElement('name-error');
     const emailError = createErrorElement('email-error');
@@ -111,17 +115,14 @@ function setupFormValidation() {
     form.addEventListener('submit', (event) => {
         let isValid = true;
 
-        // Validation Check 1: Required & Length Check for Name
         if (nameInput.value.trim().length < 2) {
             nameError.textContent = "Error: Full name must be at least 2 characters long.";
             isValid = false;
         } else {
             nameError.textContent = "";
-            // Save username to storage for UX improvement
             localStorage.setItem('northStarUserName', nameInput.value.trim());
         }
 
-        // Validation Check 2: Email Format Validation
         const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailPattern.test(emailInput.value.trim())) {
             emailError.textContent = "Error: Please enter a valid email address (e.g., name@example.com).";
@@ -130,15 +131,17 @@ function setupFormValidation() {
             emailError.textContent = "";
         }
 
-        // Prevent submission if invalid
         if (!isValid) {
             event.preventDefault();
         }
     });
 }
 
-// Helper function to generate error feedback elements
+// Helper to generate error elements
 function createErrorElement(id) {
+    let existing = document.getElementById(id);
+    if (existing) return existing;
+
     const small = document.createElement('small');
     small.id = id;
     small.style.color = "firebrick";
